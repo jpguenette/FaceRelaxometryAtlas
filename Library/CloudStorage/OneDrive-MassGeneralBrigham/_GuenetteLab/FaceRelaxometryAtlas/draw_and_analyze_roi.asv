@@ -181,7 +181,7 @@ function draw_and_analyze_roi(slice_index)
             mkdir("ROI_Images");
         end
     
-        %% Append to CSV in Summary_Statistics
+        %% Step 4–5: Append to CSV in Summary_Statistics
         csv_path = fullfile("Summary_Statistics", selected_subject_dir + ".csv");
         if ~isfile(csv_path)
             writetable(cell2table({"Location", "Mean", "Maximum", "Minimum"}), csv_path, 'WriteVariableNames', false);
@@ -189,7 +189,7 @@ function draw_and_analyze_roi(slice_index)
         new_row = {location, stats1(1), stats1(2), stats1(3)};
         writecell(new_row, csv_path, 'WriteMode', 'append');
     
-        %% Save histograms
+        %% Step 6–7: Save histograms
         hist_dir = fullfile("Histograms", selected_subject_dir, location);
         if ~exist(hist_dir, "dir")
             mkdir(hist_dir);
@@ -205,7 +205,7 @@ function draw_and_analyze_roi(slice_index)
         saveas(f2, fullfile(hist_dir, "T2_Hist.png"));
         close(f2);
         
-        %% Save ROI overlay images
+        %% Step 8–9: Save ROI overlay images
         roi_dir = fullfile("ROI_Images", selected_subject_dir, location);
         if ~exist(roi_dir, "dir")
             mkdir(roi_dir);
