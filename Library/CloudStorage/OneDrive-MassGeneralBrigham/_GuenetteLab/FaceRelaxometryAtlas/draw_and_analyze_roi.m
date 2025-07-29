@@ -84,6 +84,7 @@ function draw_and_analyze_roi(locations_path, slice_index)
             vol1_Hist = [];
             vol2_Hist = [];
             update_displayed_slices();
+            selected_subject_dir = subject_name;
             return;
         end
         selected_subject_dir = subject_name;
@@ -177,6 +178,16 @@ function draw_and_analyze_roi(locations_path, slice_index)
 
     % ----------------- Submit Callback -----------------
     function submit_callback()
+        if isempty(selected_subject_dir) || strcmp(selected_subject_dir, '--Select--')
+            uialert(fig, 'Please choose a subject.', 'No Subject');
+            return;
+        end
+
+        if strcmp(location_input.Value, '--Select--')
+            uialert(fig, 'Please choose a location.', 'No Location');
+            return;
+        end
+
         if isempty(h_circle1) || ~isvalid(h_circle1)
             uialert(fig, 'Please draw a circle before submitting.', 'No ROI');
             return;
