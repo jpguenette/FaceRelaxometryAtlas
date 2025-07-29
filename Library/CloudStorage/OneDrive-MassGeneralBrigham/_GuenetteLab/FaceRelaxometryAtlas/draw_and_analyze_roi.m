@@ -1,4 +1,4 @@
-function draw_and_analyze_roi(slice_index)
+function draw_and_analyze_roi(locations_path, slice_index)
     % Initialize shared state
     current_slice = slice_index;
     h_circle1 = [];
@@ -24,6 +24,9 @@ function draw_and_analyze_roi(slice_index)
     subject_dirs = {folder_list([folder_list.isdir]).name};
     subject_names = ["--Select--", subject_dirs];
 
+    locations = readlines(locations_path);
+    locations_dropdown = ['--Select--', locations'];
+
     selected_subject_dir = '';
     
     % Dropdown menu
@@ -31,15 +34,18 @@ function draw_and_analyze_roi(slice_index)
         'Items', subject_names, ...
         'Value', "--Select--", ...
         'ValueChangedFcn', @(dd,event)load_subject(dd.Value));
-        subject_dropdown.Layout.Row = 2;
-        subject_dropdown.Layout.Column = 1;
+    subject_dropdown.Layout.Row = 2;
+    subject_dropdown.Layout.Column = 1;
 
     % Body part name input
     location_label = uilabel(gl, 'Text', 'Location:');
     location_label.Layout.Row = 1;
     location_label.Layout.Column = 2;
-    
-    location_input = uieditfield(gl, 'text', 'Value', '--Location--', 'FontSize', 14);
+
+    % Dropdown menu
+    location_input = uidropdown(gl, ...
+        'Items', locations_dropdown, ...
+        'Value', "--Select--");
     location_input.Layout.Row = 2;
     location_input.Layout.Column = 2;
 
@@ -67,6 +73,8 @@ function draw_and_analyze_roi(slice_index)
 
     % Scroll callback
     fig.WindowScrollWheelFcn = @scroll_callback;
+
+    fig.KeyPressFcn = @key_callback;
 
     % ----------------- Callback: Load Subject -----------------
     function load_subject(subject_name)
@@ -110,6 +118,19 @@ function draw_and_analyze_roi(slice_index)
     % ----------------- Scroll Callback -----------------
     function scroll_callback(~, event)
         delta = -event.VerticalScrollCount;
+        change_slice(delta);
+    end
+
+    function key_callback(~, event)
+        switch event.Key
+            case 'uparrow'
+                change_slice(1);
+            case 'downarrow'
+                change_slice(-1);
+        end
+    end
+
+    function change_slice(delta)
         new_slice = current_slice + delta;
         if ~isempty(vol1) && new_slice >= 1 && new_slice <= size(vol1, 3)
             current_slice = new_slice;
@@ -162,6 +183,7 @@ function draw_and_analyze_roi(slice_index)
         end
     
         location = location_input.Value;
+        location_title = replace(location, ' ', '_');
         img1_Hist = vol1_Hist(:, :, current_slice);
         img2_Hist = vol2_Hist(:, :, current_slice);
         mask = createMask(h_circle1);
@@ -182,15 +204,15 @@ function draw_and_analyze_roi(slice_index)
         end
     
         %% Append to CSV in Summary_Statistics
-        csv_path = fullfile("Summary_Statistics", selected_subject_dir + ".csv");
+        csv_path = fullfile("Summary_Statistics", location_title + ".csv");
         if ~isfile(csv_path)
-            writetable(cell2table({"Location", "Mean", "Maximum", "Minimum"}), csv_path, 'WriteVariableNames', false);
+            writetable(cell2table({"Subject", "Mean T1", "Maximum T1", "Minimum T1", "Mean T2", "Maximum T2", "MinimumT2"}), csv_path, 'WriteVariableNames', false);
         end
-        new_row = {location, stats1(1), stats1(2), stats1(3)};
+        new_row = {selected_subject_dir, stats1(1), stats1(2), stats1(3), stats2(1), stats2(2), stats2(3)};
         writecell(new_row, csv_path, 'WriteMode', 'append');
     
         %% Save histograms
-        hist_dir = fullfile("Histograms", selected_subject_dir, location);
+        hist_dir = fullfile("Histograms", location, selected_subject_dir);
         if ~exist(hist_dir, "dir")
             mkdir(hist_dir);
         end
@@ -206,7 +228,7 @@ function draw_and_analyze_roi(slice_index)
         close(f2);
         
         %% Save ROI overlay images
-        roi_dir = fullfile("ROI_Images", selected_subject_dir, location);
+        roi_dir = fullfile("ROI_Images", location, selected_subject_dir);
         if ~exist(roi_dir, "dir")
             mkdir(roi_dir);
         end
